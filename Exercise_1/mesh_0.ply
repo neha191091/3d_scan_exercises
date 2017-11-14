@@ -1,0 +1,14 @@
+ply
+format ascii 1.0
+element vertex 2
+property float x
+property float y
+property float z
+property uchar red
+property uchar green
+property uchar blue
+element face 0
+property list uchar int vertex_index
+end_header
+0,988389 0,944156 0,698115 253 254 254
+0,989494 0,944111 0,696702 253 254 254
