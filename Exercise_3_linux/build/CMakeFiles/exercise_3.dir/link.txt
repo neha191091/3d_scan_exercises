@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++14  -O3 -DNDEBUG   CMakeFiles/exercise_3.dir/main.cpp.o CMakeFiles/exercise_3.dir/FreeImageHelper.cpp.o  -o exercise_3 -rdynamic -lfreeimage /usr/local/lib/libflann.so /usr/local/lib/libceres.so.1.13.0 -lglog -lgflags -lpthread -Wl,-rpath,/usr/local/lib 

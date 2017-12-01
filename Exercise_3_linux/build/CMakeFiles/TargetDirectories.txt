@@ -1,0 +1,3 @@
+/home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/build/CMakeFiles/edit_cache.dir
+/home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/build/CMakeFiles/rebuild_cache.dir
+/home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/build/CMakeFiles/exercise_3.dir
