@@ -110,14 +110,22 @@ public:
 		// class.
 		// Important: Ceres automatically squares the cost function.
 		T poseArray[6];
-		memcpy(poseArray, pose, sizeof(pose));
+		//memcpy(poseArray, pose, sizeof(pose));
+		poseArray[0] = pose[0];
+		poseArray[1] = pose[1];
+		poseArray[2] = pose[2];
+		poseArray[3] = pose[3];
+		poseArray[4] = pose[4];
+		poseArray[5] = pose[5];
 		PoseIncrement<T> poseIncrement = PoseIncrement<T>(poseArray);
+		//std::cout<<"PoseArray: "<<poseArray[0] << ","<<poseArray[1] << ","<<poseArray[2] << ","<<poseArray[3] << ","<<poseArray[4] << ","<<poseArray[5] << ","<<std::endl;
 		T transformedSourcePoint[3];
 		T sourcePoint[3];
 		sourcePoint[0] = (T)m_sourcePoint(0);
 		sourcePoint[1] = (T)m_sourcePoint(1);
 		sourcePoint[2] = (T)m_sourcePoint(2);
 		poseIncrement.apply(sourcePoint, transformedSourcePoint);
+		//std::cout<<"Source point 0: "<<sourcePoint[0]<<", Transformed point 0: "<<transformedSourcePoint[0]<<std::endl;
 		//Vector3f transformedSourcePointVec;
 		//transformedSourcePointVec(0) = (float)transformedSourcePoint[0];
 		//transformedSourcePointVec(1) = (float)transformedSourcePoint[1];

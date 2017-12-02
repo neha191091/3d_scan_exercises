@@ -8,7 +8,7 @@
 #include "ProcrustesAligner.h"
 #include "PointCloud.h"
 
-#define USE_POINT_TO_PLANE	1
+#define USE_POINT_TO_PLANE	0
 
 #define RUN_PROCRUSTES		0
 #define RUN_SHAPE_ICP		1
