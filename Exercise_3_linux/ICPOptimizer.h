@@ -169,7 +169,13 @@ public:
 		// Important: Ceres automatically squares the cost function.
 
 		T poseArray[6];
-		memcpy(poseArray, pose, sizeof(pose));
+		//memcpy(poseArray, pose, sizeof(pose));
+		poseArray[0] = pose[0];
+		poseArray[1] = pose[1];
+		poseArray[2] = pose[2];
+		poseArray[3] = pose[3];
+		poseArray[4] = pose[4];
+		poseArray[5] = pose[5];
 		PoseIncrement<T> poseIncrement = PoseIncrement<T>(poseArray);
 		T transformedSourcePoint[3];
 		T sourcePoint[3];
