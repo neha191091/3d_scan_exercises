@@ -310,13 +310,15 @@ private:
 				const auto& sourcePoint = sourcePoints[i];
 				const auto& targetPoint = targetPoints[match.idx];
 
-				if (!sourcePoint.allFinite() && !targetPoint.allFinite())
+				if (!sourcePoint.allFinite() && !targetPoint.allFinite()) 
 					continue;
+
+				double* pose = poseIncrement.getData();
 
 				// TODO: Create a new point-to-point cost function and add it as constraint (i.e. residual block) 
 				// to the Ceres problem.
 				ceres::CostFunction* pointToPointCost = PointToPointConstraint::create(sourcePoint,targetPoint,1);
-				problem.AddResidualBlock(pointToPointCost, NULL, poseIncrement);
+				problem.AddResidualBlock(pointToPointCost, NULL, pose);
 
 
 				if (m_bUsePointToPlaneConstraints) {
@@ -327,7 +329,8 @@ private:
 					 
 					// TODO: Create a new point-to-plane cost function and add it as constraint (i.e. residual block) 
 					// to the Ceres problem.
-					ceres::CostFunction* pointToPlaneConstraint = PointToPlaneConstraint::create(sourcePoint,targetPoint,targetNormal,1);
+					ceres::CostFunction* pointToPlaneCost = PointToPlaneConstraint::create(sourcePoint,targetPoint,targetNormal,1);
+					problem.AddResidualBlock(pointToPlaneCost, NULL, pose);
 
 				}
 			}
