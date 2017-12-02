@@ -68,8 +68,6 @@ private:
 
 	Vector3f computeTranslation(const Vector3f& sourceMean, const Vector3f& targetMean, const Matrix3f& rotation) {
 		// TODO: Compute the translation vector from source to target opints.
-		
-		// TODO: Compute the translation vector from source to target opints.
 		Vector3f translation = Vector3f::Zero();
 		translation = sourceMean - targetMean;
 		return translation;
