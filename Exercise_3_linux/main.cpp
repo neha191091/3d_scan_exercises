@@ -11,8 +11,8 @@
 #define USE_POINT_TO_PLANE	1
 
 #define RUN_PROCRUSTES		0
-#define RUN_SHAPE_ICP		0
-#define RUN_SEQUENCE_ICP	1
+#define RUN_SHAPE_ICP		1
+#define RUN_SEQUENCE_ICP	0
 
 void debugCorrespondenceMatching() {
 	// Load the source and target mesh.
@@ -90,6 +90,7 @@ int alignBunnyWithProcrustes() {
 	// Estimate the pose from source to target mesh with Procrustes alignment.
 	ProcrustesAligner aligner;
 	Matrix4f estimatedPose = aligner.estimatePose(sourcePoints, targetPoints);
+	std::cout << "Estimated pose: " << std::endl << estimatedPose << std::endl;
 
 	// Visualize the resulting joined mesh. We add triangulated spheres for point matches.
 	SimpleMesh resultingMesh = SimpleMesh::joinMeshes(sourceMesh, targetMesh, estimatedPose);
@@ -138,6 +139,7 @@ int alignBunnyWithICP() {
 	PointCloud target{ targetMesh };
 
 	Matrix4f estimatedPose = optimizer.estimatePose(source, target);
+	std::cout << "Estimated pose: " << std::endl << estimatedPose << std::endl;
 	
 	// Visualize the resulting joined mesh. We add triangulated spheres for point matches.
 	SimpleMesh resultingMesh = SimpleMesh::joinMeshes(sourceMesh, targetMesh, estimatedPose);
@@ -210,6 +212,86 @@ int reconstructRoom() {
 				return -1;
 			}
 		}
+		
+		i++;
+	}
+
+	return 0;
+}
+
+int reconstructRoom2() {
+	std::string filenameIn = PROJECT_DIR + std::string("/data/rgbd_dataset_freiburg1_xyz/");
+	std::string filenameBaseOut = PROJECT_DIR + std::string("/results/mesh_");
+
+	// Load video
+	std::cout << "Initialize virtual sensor..." << std::endl;
+	VirtualSensor sensor;
+	if (!sensor.init(filenameIn)) {
+		std::cout << "Failed to initialize the sensor!\nCheck file path!" << std::endl;
+		return -1;
+	}
+
+	// We store a first frame as a reference frame. All next frames are tracked relatively to the first frame.
+	sensor.processNextFrame();
+	PointCloud target{ sensor.getDepth(), sensor.getDepthIntrinsics(), sensor.getDepthExtrinsics(), sensor.getDepthImageWidth(), sensor.getDepthImageHeight() };
+	
+	// Setup the optimizer.
+	ICPOptimizer optimizer;
+	optimizer.setMatchingMaxDistance(0.1f);
+	if (USE_POINT_TO_PLANE) {
+		optimizer.usePointToPlaneConstraints(true);
+		optimizer.setNbOfIterations(10);
+	}
+	else {
+		optimizer.usePointToPlaneConstraints(false);
+		optimizer.setNbOfIterations(20);
+	}
+
+	// We store the estimated camera poses.
+	std::vector<Matrix4f> estimatedPoses;
+	std::vector<Matrix4f> transformedEstC2WPoses;
+	Matrix4f currentCameraToWorld = Matrix4f::Identity();
+	estimatedPoses.push_back(currentCameraToWorld.inverse());
+	// transformedEstC2WPoses stores accumulated estimated transform from the 1st frame to the current frame
+	transformedEstC2WPoses.push_back(currentCameraToWorld);
+
+
+	int i = 0;
+	const int iMax = 50;
+	while (sensor.processNextFrame() && i <= iMax) {
+		float* depthMap = sensor.getDepth();
+		Matrix3f depthIntrinsics = sensor.getDepthIntrinsics();
+		Matrix4f depthExtrinsics = sensor.getDepthExtrinsics();
+
+		// Estimate the current camera pose from source to target mesh with ICP optimization.
+		// We downsample the source image to speed up the correspondence matching.
+		PointCloud source{ sensor.getDepth(), sensor.getDepthIntrinsics(), sensor.getDepthExtrinsics(), sensor.getDepthImageWidth(), sensor.getDepthImageHeight(), 8 };
+		currentCameraToWorld = optimizer.estimatePose(source, target, Matrix4f::Identity());
+		
+		//Multiplying the current estimated transform from the previous frame to the current.
+		Matrix4f transformedEstC2WPose = transformedEstC2WPoses.back()*currentCameraToWorld;
+		transformedEstC2WPoses.push_back(transformedEstC2WPose);
+		// Invert the transformation matrix to get the current camera pose.
+		Matrix4f currentCameraPose = transformedEstC2WPose.inverse();
+		std::cout << "Current camera pose: " << std::endl << currentCameraPose << std::endl;
+		Matrix4f prevCameraPose = estimatedPoses.back();
+		estimatedPoses.push_back(currentCameraPose);
+
+		if (i % 5 == 0) {
+			// We write out the mesh to file for debugging.
+			SimpleMesh currentDepthMesh{ sensor, currentCameraPose, 0.1f };
+			SimpleMesh currentCameraMesh = SimpleMesh::camera(currentCameraPose, 0.0015f);
+			SimpleMesh resultingMesh = SimpleMesh::joinMeshes(currentDepthMesh, currentCameraMesh, Matrix4f::Identity());
+
+			std::stringstream ss;
+			ss << filenameBaseOut << sensor.getCurrentFrameCnt() << ".off";
+			if (!resultingMesh.writeMesh(ss.str())) {
+				std::cout << "Failed to write mesh!\nCheck file path!" << std::endl;
+				return -1;
+			}
+		}
+
+		target = source;
 		
 		i++;
 	}

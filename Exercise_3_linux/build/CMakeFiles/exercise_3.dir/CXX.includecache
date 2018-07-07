@@ -49,6 +49,8 @@ NearestNeighbor.h
 /home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/NearestNeighbor.h
 PointCloud.h
 /home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/PointCloud.h
+ProcrustesAligner.h
+/home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/ProcrustesAligner.h
 
 /home/neha/Documents/repo/3d_scan_exercises/Exercise_3_linux/NearestNeighbor.h
 flann/flann.hpp

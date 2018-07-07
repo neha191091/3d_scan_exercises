@@ -10,6 +10,10 @@
 #include "SimpleMesh.h"
 #include "NearestNeighbor.h"
 #include "PointCloud.h"
+#include "ProcrustesAligner.h"
+
+#define SVD		1
+#define LM		0
 
 
 /**
@@ -256,28 +260,51 @@ public:
 
 			auto transformedPoints = transformPoints(source.getPoints(), estimatedPose);
 			auto matches = m_nearestNeighborSearch->queryMatches(transformedPoints);
+			std::cout << "Number of matched points ..." << matches.size() << std::endl;
+
 
 			clock_t end = clock();
 			double elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
 			std::cout << "Completed in " << elapsedSecs << " seconds." << std::endl;
+			Matrix4f matrix;
+			if(LM)
+			{
+				// Prepare point-to-point and point-to-plane constraints.
+				ceres::Problem problem;
+				prepareConstraints(transformedPoints, target.getPoints(), target.getNormals(), matches, poseIncrement, problem);
 
-			// Prepare point-to-point and point-to-plane constraints.
-			ceres::Problem problem;
-			prepareConstraints(transformedPoints, target.getPoints(), target.getNormals(), matches, poseIncrement, problem);
+				// Configure options for the solver.
+				ceres::Solver::Options options;
+				configureSolver(options);
 
-			// Configure options for the solver.
-			ceres::Solver::Options options;
-			configureSolver(options);
+				// Run the solver (for one iteration).
+				ceres::Solver::Summary summary;
+				ceres::Solve(options, &problem, &summary);
+				std::cout << summary.BriefReport() << std::endl;
+				//std::cout << summary.FullReport() << std::endl;
 
-			// Run the solver (for one iteration).
-			ceres::Solver::Summary summary;
-			ceres::Solve(options, &problem, &summary);
-			std::cout << summary.BriefReport() << std::endl;
-			//std::cout << summary.FullReport() << std::endl;
-
-			// Update the current pose estimate (we always update the pose from the left, using left-increment notation).
-			Matrix4f matrix = PoseIncrement<double>::convertToMatrix(poseIncrement);
-			estimatedPose = PoseIncrement<double>::convertToMatrix(poseIncrement) * estimatedPose;
+				// Update the current pose estimate (we always update the pose from the left, using left-increment notation).
+				matrix = PoseIncrement<double>::convertToMatrix(poseIncrement);
+			}
+			else if(SVD)
+			{
+				std::cout << "Enter SVD "<< std::endl;
+				std::vector<Vector3f> sourcePoints;
+				std::vector<Vector3f> targetPointsMatch;
+				std::vector<Vector3f> targetPoints = target.getPoints();
+				const unsigned nPoints = transformedPoints.size();
+				for (unsigned i = 0; i < nPoints; ++i) {
+					const auto match = matches[i];
+					if (match.idx >= 0) {
+						sourcePoints.push_back(transformedPoints[i]);
+						targetPointsMatch.push_back(targetPoints[match.idx]);
+					}
+				}
+				ProcrustesAligner aligner;
+				std::cout << "	Start Estimating Pose "<< std::endl;
+				matrix = aligner.estimatePose(sourcePoints, targetPointsMatch);
+			}
+			estimatedPose = matrix * estimatedPose;
 			poseIncrement.setZero();
 
 			std::cout << "Optimization iteration done." << std::endl;
